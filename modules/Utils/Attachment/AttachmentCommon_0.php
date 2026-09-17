@@ -827,6 +827,14 @@ class Utils_AttachmentCommon extends ModuleCommon {
     
     public static function get_access($id) {
     	$note = self::get_note($id);
+        // No attached_to tokens at all (a standalone note, not attached to any
+        // record) - same "nothing to restrict access to" case as an individual
+        // token failing to decode below, so grant here too and let the note fall
+        // through to its own permission field/creator check instead. Without this,
+        // the foreach below never runs, $ret stays at its false default, and
+        // rb_access() turns that into a hard deny that overrides the permission
+        // field for everyone, including the note's own creator and admins.
+        if (!$note['attached_to']) return true;
         $ret = false;
         foreach($note['attached_to'] as $token) {
         	$token = Utils_RecordBrowserCommon::decode_record_token($token);
