@@ -489,3 +489,31 @@ scoped under `.Utils_RecordBrowser__View_entry`, `margin-top: 3px` — that fire
 such divs that end up adjacent siblings, regardless of nesting depth (it also covers, e.g.,
 Attachment's own stack of fixed `.epesi-rv-columns` rows, pre-existing and unrelated to
 `$secondary_blocks`). A new template does not need its own version of this.
+
+---
+
+# 6. Utils_FileStorage is content-addressed and dedups by hash
+
+Every file-type field (`Utils_Attachment`'s notes, a RecordBrowser `file` field, anything
+calling `Utils_FileStorageCommon::write_file()`/`write_content()`) stores bytes through
+`Utils_FileStorage`, not directly. It is a two-table split, and the split is what gives it
+deduplication for free:
+
+- `utils_filestorage_files` — one row **per unique content hash** (`HASH_METHOD`, currently
+  `sha512`). Holds the actual bytes on disk, at a hash-derived path
+  (`get_storage_file_path($hash)` splits the hash into nested directories).
+- `utils_filestorage` — one row **per attachment/pointer** (filename, `link`, `backref`,
+  `created_by`, ...), with a `file_id` FK into the table above.
+
+`add_data()` (called by `add_data_from_content()`/`add_data_from_file()`) hashes the incoming
+content first. It only writes to disk and inserts a new `utils_filestorage_files` row if that
+hash isn't already present; otherwise it just returns the existing `file_id`. `write_file()`/
+`write_content()` then always insert a **new** `utils_filestorage` pointer row — so attaching
+the same file content to two different notes/records writes the bytes once and adds a second
+pointer row that reuses the same `file_id`. This is automatic; a caller doesn't opt in.
+
+Deletion is the mirror image: `delete()` only flags a pointer row `deleted=1`.
+`purge()`/`delete_orphaned_file()` remove a pointer and, only if no other `utils_filestorage`
+row still references that `file_id`, unlink the on-disk file and remove the
+`utils_filestorage_files` row too — so purging one of two notes sharing a file leaves the
+other note's copy intact.
