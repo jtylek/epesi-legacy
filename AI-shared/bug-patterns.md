@@ -126,6 +126,16 @@ Check the default before concluding a cache is warm.
 **The whole app is down with a redeclare fatal.** A raw `require_once` of a `Common` file
 bypasses the module loader's guard. Go through the module system.
 
+**Everyone is logged out at once, minutes after being active.** Until 2026-09-24,
+`Cache::clear()` with no name called the driver's own `clear()`, which on every shared
+backend is server-wide — `flush()` on memcached, `FLUSHDB` on redis, the whole APCu/Zend SHM
+pool. With `SESSION_TYPE=memcache`, sessions sit on the same memcached (`CACHE_SERVER` falls
+back to `MEMCACHE_SESSION_SERVER`), so any module install, admin *Clear Cache* or
+`cache:rebuild` wiped every session of every install on the server. It now switches to a new
+random key generation instead (`include/cache.php`). If it recurs, memcached's own
+`cmd_flush` stat going up while `evictions` stays at 0 is the tell. The first visible
+symptom was often the next item's console error, not the logout itself.
+
 **`Uncaught SyntaxError: Failed to execute 'appendChild' on 'Node': Unexpected identifier`.**
 An endpoint loaded with `jQuery.getScript()` (or `dataType: 'script'`) answered with plain
 text, typically a guard's `die('Invalid token')`, and jQuery ran it as JavaScript. Every

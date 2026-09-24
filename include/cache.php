@@ -18,6 +18,15 @@ class Cache
     /** Driver actually in use, for diagnostics - see active_driver(). */
     protected static $active_driver;
 
+    /** Current cache generation, part of every key - see clear(). Loaded lazily. */
+    protected static $generation;
+
+    /** Lifetime of the stored generation token. Losing it early (eviction, a memcached
+     *  restart) is safe - a fresh one is minted, which only invalidates the cache - so this
+     *  just bounds how often that happens on its own. 30 days is also memcached's ceiling
+     *  for a relative TTL. */
+    const GENERATION_TTL = 2592000;
+
     public static function init()
     {
         foreach (self::driver_chain() as $driver) {
@@ -138,29 +147,75 @@ class Cache
 
     public static function get($name, $default = null)
     {
-        $name = 'epesi_' . INSTALLATION_ID . '_' . $name;
-        $ret = self::$cache_object->getItem($name);
+        $ret = self::$cache_object->getItem(self::key($name));
         if(is_null($ret->get())) return $default;
         return $ret->get();
     }
 
     public static function set($name, $value,$expiration_seconds=0)
     {
-        $name = 'epesi_' . INSTALLATION_ID . '_' . $name;
-        $ret = self::$cache_object->getItem($name);
+        $ret = self::$cache_object->getItem(self::key($name));
         $ret->set($value);
         if($expiration_seconds>0) $ret->expiresAfter($expiration_seconds);
         self::$cache_object->save($ret);
     }
 
+    /**
+     * With a name, drops that one entry. Without, empties this install's whole cache.
+     *
+     * The whole-cache case switches to a new generation rather than calling the driver's
+     * own clear(), because on every shared backend that is a server-wide flush: flush() on
+     * memcached, FLUSHDB on redis, apcu_clear_cache()/zend_shm_cache_clear() for the whole
+     * PHP process pool. Sessions can sit on that same memcached (SESSION_TYPE=memcache, and
+     * CACHE_SERVER falls back to MEMCACHE_SESSION_SERVER), so every module install, admin
+     * Clear Cache or cache:rebuild used to log out every user of every install on the server.
+     * The old generation's entries are never read again and age out through their TTL; a
+     * request that already read the old generation keeps using it until it ends.
+     *
+     * Files and Sqlite live under this install's own TEMP_DIR, so a real clear is safe
+     * there, and it frees the disk the old generation would otherwise hold.
+     */
     public static function clear($name=null)
     {
         if ($name) {
-            $name = 'epesi_' . INSTALLATION_ID . '_' . $name;
-            self::$cache_object->deleteItem($name);
-        } else {
+            self::$cache_object->deleteItem(self::key($name));
+            return;
+        }
+        if (in_array(self::$active_driver, array('Files', 'Sqlite'))) {
             self::$cache_object->clear();
         }
+        self::new_generation();
+    }
+
+    protected static function key($name)
+    {
+        return 'epesi_' . INSTALLATION_ID . '_' . self::generation() . '_' . $name;
+    }
+
+    protected static function generation_key()
+    {
+        return 'epesi_' . INSTALLATION_ID . '_generation';
+    }
+
+    protected static function generation()
+    {
+        if (self::$generation === null) {
+            $stored = self::$cache_object->getItem(self::generation_key())->get();
+            if (is_string($stored) && $stored !== '') self::$generation = $stored;
+            else self::new_generation();
+        }
+        return self::$generation;
+    }
+
+    /** Random rather than a counter: a lost counter would restart at a value whose old
+     *  entries may still be live, a lost random token never matches anything. */
+    protected static function new_generation()
+    {
+        self::$generation = bin2hex(random_bytes(4));
+        $item = self::$cache_object->getItem(self::generation_key());
+        $item->set(self::$generation);
+        $item->expiresAfter(self::GENERATION_TTL);
+        self::$cache_object->save($item);
     }
 
 }
