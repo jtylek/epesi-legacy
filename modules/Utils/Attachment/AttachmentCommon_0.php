@@ -646,14 +646,21 @@ class Utils_AttachmentCommon extends ModuleCommon {
     }
 
     // Wraps the generic multiselect rendering just to add one rule: block a
-    // save that leaves 'attached_to' empty. get_access() (below) walks
-    // 'attached_to' tokens to decide who may view a note - an empty list
-    // means get_access() always returns false, so a note saved with the
-    // field cleared (the "Remove" button on this widget allows it, since the
-    // field itself is 'required'=>false - see AttachmentInstall.php) becomes
-    // inaccessible to everyone, including its own author, immediately after
-    // saving, with "Access denied" the only thing shown back (see
-    // submit_attachment()'s 'view' case) and no way to reopen it to fix.
+    // save that leaves 'attached_to' empty. The field itself is 'required'=>false
+    // (see AttachmentInstall.php) and this widget's "Remove" button lets the list
+    // end up empty, which is a state a note has no reason to be in - it is the
+    // list get_access() (below) walks to decide who may view the note, so an
+    // empty one leaves nothing to grant access on.
+    //
+    // This is the prevention half of a pair; get_access()'s early return for an
+    // empty list is the remediation half. Historically that case fell through to
+    // $ret's false default, which rb_access() turned into a hard deny overriding
+    // the note's own permission field - so a note saved this way was inaccessible
+    // to everyone including its author, showing only "Access denied" (see
+    // submit_attachment()'s 'view' case) with no way to reopen and fix it. This
+    // rule stops new notes reaching that state; the early return is what recovers
+    // the ones saved before it existed, since the patch that registers this
+    // callback does not repair existing rows.
     public static function QFfield_attached_to(&$form, $field, $label, $mode, $default, $desc, $rb_obj) {
         Utils_RecordBrowserCommon::QFfield_multiselect($form, $field, $label, $mode, $default, $desc, $rb_obj);
         if ($mode == 'add' || $mode == 'edit') {
@@ -876,6 +883,10 @@ class Utils_AttachmentCommon extends ModuleCommon {
         // the foreach below never runs, $ret stays at its false default, and
         // rb_access() turns that into a hard deny that overrides the permission
         // field for everyone, including the note's own creator and admins.
+        //
+        // QFfield_attached_to() above now blocks saving a note in this state at
+        // all, so this only covers notes stored before that rule existed - its
+        // patch registers the callback but does not repair existing rows.
         if (!$note['attached_to']) return true;
         $ret = false;
         foreach($note['attached_to'] as $token) {
