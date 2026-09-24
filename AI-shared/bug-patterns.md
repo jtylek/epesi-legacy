@@ -126,6 +126,13 @@ Check the default before concluding a cache is warm.
 **The whole app is down with a redeclare fatal.** A raw `require_once` of a `Common` file
 bypasses the module loader's guard. Go through the module system.
 
+**`Uncaught SyntaxError: Failed to execute 'appendChild' on 'Node': Unexpected identifier`.**
+An endpoint loaded with `jQuery.getScript()` (or `dataType: 'script'`) answered with plain
+text, typically a guard's `die('Invalid token')`, and jQuery ran it as JavaScript. Every
+exit path of such an endpoint must emit valid JS — a `/* comment */` to stop silently,
+`alert(...)` if the user should know — and it should `define('JS_OUTPUT',1)` so PHP errors
+come back as JS too. `Utils/RecordBrowser/indexer.php` was the case found.
+
 **Query counts changed but the page looks identical** — see
 [performance.md](performance.md); batching a per-row query also changes every integer
 column's PHP type, which breaks any `===`/`!==` downstream.

@@ -1,13 +1,20 @@
 <?php
+// Loaded via jQuery.getScript() (indexer.js), so the whole response is executed as
+// JavaScript - every exit path must emit valid JS. A bare die('Invalid token') used to
+// surface as "Uncaught SyntaxError: Unexpected identifier 'token'".
 if (!isset($_GET['cid']) || !isset($_GET['token']))
-	die('Invalid request');
+	die('/* Invalid request */');
 
 
-define('CID',$_GET['cid']); 
+define('JS_OUTPUT',1);
+define('CID',$_GET['cid']);
 define('READ_ONLY_SESSION',true);
 require_once('../../../include.php');
+// Session gone (expired, logged out, memcached flushed) or a stale tab still polling with
+// an old session's token: stop the polling loop quietly by not rescheduling it. The next
+// process.php request handles the expired session itself.
 if(!isset($_SESSION['rb_indexer_token']) || $_SESSION['rb_indexer_token']!=$_GET['token'])
-    die('Invalid token');
+    die('/* Invalid token */');
 
 $total = 0;
 if(@file_get_contents(DATA_DIR.'/Utils_RecordBrowser/last')<time()-120) {
