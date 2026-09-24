@@ -303,6 +303,9 @@ class PatchUtil
 
 class PatchesDB
 {
+    // One PatchesDB is created per patches/ directory on every listing, but the table's shape
+    // can't change mid-process - checking it once is enough.
+    private static $table_checked = false;
 
     function __construct()
     {
@@ -311,6 +314,9 @@ class PatchesDB
 
     private function _check_table()
     {
+        if (self::$table_checked) {
+            return;
+        }
         $tables_db = DB::MetaTables();
         if (!in_array('patches', $tables_db)) {
             // id: md5 of the patch's relative file path - sole lookup key, unchanged since
@@ -318,7 +324,17 @@ class PatchesDB
             // when mark_applied() ran) for the admin Patches screen - was_applied() below never
             // reads them, so their presence/absence cannot affect whether a patch runs again.
             DB::CreateTable('patches', "id C(32) KEY NOTNULL, name C(255), date T");
+        } else {
+            // An install older than Base/20260918_patches_table_name_and_date.php has no
+            // name/date yet, but mark_applied() writes both. Every pending patch dated before
+            // that one runs first on an upgrade (as does a module install's bulk mark_applied()),
+            // so without this its INSERT fails ("Unknown column 'name'"), DB::Execute() doesn't
+            // throw, and a patch that already ran is never recorded - it runs again next update.
+            // Both calls no-op once the columns exist, as does that patch's own copy of them.
+            PatchUtil::db_add_column('patches', 'name', 'C(255)');
+            PatchUtil::db_add_column('patches', 'date', 'T');
         }
+        self::$table_checked = true;
     }
 
     public function was_applied($identifier)
