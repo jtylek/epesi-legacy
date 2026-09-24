@@ -76,9 +76,24 @@ init_re: function(f) {
 };
 
 
-(function($,len,createRange,duplicate){
+// `createRange`/`duplicate` used to be passed in here too - string keys for the
+// IE-only range APIs, minifier-golf from the plugin's origins. Both branches that
+// used them are gone (see below), so only `len` is still threaded through.
+(function($,len){
 	$.fn.caret=function(options,opt2){
-		var start,end,t=this[0],browser=$.browser.msie;
+		// $.browser was removed in jQuery 1.9 and jquery-migrate 3.x does NOT restore
+		// it (only migrate 1.x did), so `$.browser.msie` threw "Cannot read properties
+		// of undefined" here after the 2026-09-23 jQuery 3.7.1 upgrade. This plugin is
+		// called from Utils_CurrencyField.validate() - a keypress handler on every
+		// currency input - so it threw on each printable keystroke and took the format
+		// validation below it (the regex test + the reset of an invalid value) with it.
+		// Affects every currency field: Invoice, Expenses, Accounts, Payments.
+		//
+		// The two branches it guarded used document.selection / createTextRange, APIs
+		// only pre-9 IE ever had and no supported browser still does, so they were dead
+		// even before the upgrade. Removed; the standard selectionStart/selectionEnd
+		// path is now unconditional.
+		var start,end,t=this[0];
 		if(typeof options==="object" && typeof options.start==="number" && typeof options.end==="number") {
 			start=options.start;
 			end=options.end;
@@ -96,45 +111,17 @@ init_re: function(f) {
 			}
 		}
 		if(typeof start!="undefined"){
-			if(browser){
-				var selRange = this[0].createTextRange();
-				selRange.collapse(true);
-				selRange.moveStart('character', start);
-				selRange.moveEnd('character', end-start);
-				selRange.select();
-			} else {
-				this[0].selectionStart=start;
-				this[0].selectionEnd=end;
-			}
+			this[0].selectionStart=start;
+			this[0].selectionEnd=end;
 			this[0].focus();
 			return this
 		} else {
-           if(browser){
-				var selection=document.selection;
-                if (this[0].tagName.toLowerCase() != "textarea") {
-                    var val = this.val(),
-                    range = selection[createRange]()[duplicate]();
-                    range.moveEnd("character", val[len]);
-                    var s = (range.text == "" ? val[len]:val.lastIndexOf(range.text));
-                    range = selection[createRange]()[duplicate]();
-                    range.moveStart("character", -val[len]);
-                    var e = range.text[len];
-                } else {
-                    var range = selection[createRange](),
-                    stored_range = range[duplicate]();
-                    stored_range.moveToElementText(this[0]);
-                    stored_range.setEndPoint('EndToEnd', range);
-                    var s = stored_range.text[len] - range.text[len],
-                    e = s + range.text[len]
-                }
-            } else {
-				var s=t.selectionStart,
-					e=t.selectionEnd;
-			}
+			var s=t.selectionStart,
+				e=t.selectionEnd;
 			var te=t.value.substring(s,e);
 			return {start:s,end:e,text:te,replace:function(st){
 				return t.value.substring(0,s)+st+t.value.substring(e,t.value[len])
 			}}
 		}
 	}
-})(jQuery,"length","createRange","duplicate");
+})(jQuery,"length");
