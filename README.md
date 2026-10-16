@@ -122,12 +122,6 @@ module.
 
 ## Getting started
 
-**If you just want to run Epesi:**
-- Easiest — the [Softaculous installer](https://epesi.org/get-started/softaculous),
-  available via most hosts' cPanel.
-- Or download a release directly from
-  [SourceForge](https://sourceforge.net/projects/epesi/).
-
 **If you want to develop your own modules:**
 
 ```bash
