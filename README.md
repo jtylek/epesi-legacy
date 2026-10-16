@@ -12,7 +12,7 @@
 > rewritten on top of [AdminLTE](https://adminlte.io/), so it has a modern look and is
 > mobile friendly.
 >
-> **New users should start with [Epesi 2.0 at github.com/jtylek/epesiCRM](https://github.com/jtylek/epesiCRM).**
+> **New users should start with [Epesi 3.0 at github.com/jtylek/epesiCRM](https://github.com/jtylek/epesiCRM).**
 > It is a complete rewrite of this Epesi 1.x code, built on Laravel and Filament, and it is the
 > version we recommend for every new installation.
 
