@@ -7,6 +7,15 @@
   business modules by describing them, not by hand-coding views.</b>
 </p>
 
+> [!NOTE]
+> **This is Epesi 1.x, legacy code for people who still use it.** Its user interface was
+> rewritten on top of [AdminLTE](https://adminlte.io/), so it has a modern look and is
+> mobile friendly.
+>
+> **New users should start with [Epesi 2.0 at github.com/jtylek/epesiCRM](https://github.com/jtylek/epesiCRM).**
+> It is a complete rewrite of this Epesi 1.x code, built on Laravel and Filament, and it is the
+> version we recommend for every new installation.
+
 <p align="center">
   <a href="https://sourceforge.net/projects/epesi"><img src="https://img.shields.io/sourceforge/dt/epesi.svg" alt="SourceForge downloads"></a>
   <img src="https://img.shields.io/badge/PHP-8.1%2B-777bb4" alt="PHP 8.1 or newer (8.2 recommended)">
