@@ -169,13 +169,6 @@ and environment notes.
 | [`AI-shared/recordbrowser-recipes.md`](AI-shared/recordbrowser-recipes.md) | Changing a recordset that already holds data, and the callback rules |
 | [`AI-shared/bug-patterns.md`](AI-shared/bug-patterns.md) | Recurring failure shapes, indexed by symptom |
 
-## Support
-
-- User manual: https://epesi.org/
-- Developer tutorial: https://epesi.org/devtutorial
-- Bugs and feature requests: open an issue on this repo
-- More about the project: https://epe.si/
-
 ## License
 
 Epesi is released under the [MIT License](https://opensource.org/licenses/MIT).
