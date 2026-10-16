@@ -171,7 +171,7 @@ and environment notes.
 
 Epesi is released under the [MIT License](https://opensource.org/licenses/MIT).
 
-Copyright © 2006-2026 by Janusz Tylek and Karina Tylek
+Copyright © 2006-2026 by Janusz Tylek
 
 <sub>[LinkedIn: Janusz](https://www.linkedin.com/in/jtylek/) ·
 [LinkedIn: Karina](https://www.linkedin.com/in/ktylek/)</sub>
