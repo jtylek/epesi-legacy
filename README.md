@@ -8,13 +8,13 @@
 </p>
 
 > [!NOTE]
-> **This is Epesi 1.x, legacy code for people who still use it.** Its user interface was
-> rewritten on top of [AdminLTE](https://adminlte.io/), so it has a modern look and is
-> mobile friendly.
+> **This is Epesi 2.x, version based on legacy code for people who still use it.** Its user
+> interface was rewritten on top of [AdminLTE](https://adminlte.io/), so it has a modern look
+> and is mobile friendly.
 >
-> **New users should start with [Epesi 3.0 at github.com/jtylek/epesiCRM](https://github.com/jtylek/epesiCRM).**
-> It is a complete rewrite of this Epesi 1.x code, built on Laravel and Filament, and it is the
-> version we recommend for every new installation.
+> **For the most recent version of Epesi 3.x see [github.com/jtylek/epesiCRM](https://github.com/jtylek/epesiCRM)**,
+> which is a from-scratch rewrite of Epesi — an open-source CRM and a kickstarter for custom
+> ERP systems. Built on Laravel 12 + Filament 5.
 
 <p align="center">
   <a href="https://sourceforge.net/projects/epesi"><img src="https://img.shields.io/sourceforge/dt/epesi.svg" alt="SourceForge downloads"></a>
