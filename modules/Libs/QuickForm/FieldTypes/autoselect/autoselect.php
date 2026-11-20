@@ -30,7 +30,11 @@ class HTML_QuickForm_autoselect extends HTML_QuickForm_select {
      * @return    void
      */
     function __construct($elementName=null, $elementLabel=null, $options=null, $more_opts_callback=null, $format=null, $attributes=null) {
-        parent::__construct($elementName, $elementLabel, $attributes);
+        // Skip HTML_QuickForm_select's constructor on purpose (as the pre-PHP 8 code did via
+        // HTML_QuickForm_element::HTML_QuickForm_element): its 3rd parameter is $options, so
+        // parent::__construct() turned $attributes (e.g. onChange) into bogus <option>s and the
+        // attribute never reached the <select>.
+        HTML_QuickForm_element::__construct($elementName, $elementLabel, $attributes);
         $this->_persistantFreeze = true;
         $this->_type = 'select';
         if (isset($options)) {
